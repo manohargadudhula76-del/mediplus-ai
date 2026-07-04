@@ -1,4 +1,4 @@
-const API_URL = "https://mediplus-ai.onrender.com";
+const API_URL = "https://mediplus-ai-1.onrender.com";
 
 if (localStorage.getItem("loggedIn") !== "true") {
   if (!window.location.href.includes("login.html") && !window.location.href.includes("index.html")) {
