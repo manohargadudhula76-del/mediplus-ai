@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Profile | MediPlus AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="dashboard-body">
+
+  <div class="sidebar glass">
+    <h2>MediPlus AI</h2>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="doctors.html">Doctor Attendance</a>
+    <a href="doctor_profiles.html">Doctor Profiles</a>
+    <a href="beds.html">Beds</a>
+    <a href="profile.html">My Profile</a>
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <main class="main-content">
+
+    <div class="profile-hero glass">
+      <div>
+        <h1>My Profile</h1>
+        <p>Logged-in user profile from authentication data</p>
+      </div>
+
+      <div class="admin-mini-card">
+        <div class="mini-avatar" id="topAvatar">DR</div>
+        <div>
+          <h3 id="topName">Loading...</h3>
+          <p id="topRole">Loading...</p>
+        </div>
+      </div>
+    </div>
+
+    <section class="admin-profile-layout">
+
+      <div class="glass admin-photo-panel">
+        <h2>Profile Photo</h2>
+
+        <div class="admin-avatar-large" id="profileAvatar">DR</div>
+
+        <input type="file" id="photoInput" accept="image/*" onchange="previewPhoto(event)">
+
+        <button onclick="removePhoto()">Remove Photo</button>
+
+        <p class="demo-text">Photo is saved locally in browser for demo.</p>
+      </div>
+
+      <div class="glass admin-form-panel">
+        <h2 id="profileTitle">User Details</h2>
+
+        <div class="form-grid">
+
+          <div>
+            <label>User Type</label>
+            <input type="text" id="userType" readonly>
+          </div>
+
+          <div>
+            <label>Doctor ID / Username</label>
+            <input type="text" id="doctorId" readonly>
+          </div>
+
+          <div>
+            <label>Name</label>
+            <input type="text" id="name" readonly>
+          </div>
+
+          <div>
+            <label>Role</label>
+            <input type="text" id="role" readonly>
+          </div>
+
+          <div>
+            <label>Department</label>
+            <input type="text" id="department" readonly>
+          </div>
+
+          <div>
+            <label>Phone</label>
+            <input type="text" id="phone" readonly>
+          </div>
+
+          <div>
+            <label>Email</label>
+            <input type="text" id="email" readonly>
+          </div>
+
+          <div>
+            <label>Hospital</label>
+            <input type="text" id="hospital" readonly>
+          </div>
+
+        </div>
+
+        <p id="profileMsg"></p>
+      </div>
+
+    </section>
+
+  </main>
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+
+if (localStorage.getItem("loggedIn") !== "true") {
+  window.location.href = "login.html";
+}
+
+let loggedUser = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+let userTypeValue = localStorage.getItem("userType") || loggedUser.user_type || "admin";
+
+let photoKey = userTypeValue === "doctor"
+  ? `doctorPhoto_${loggedUser.doctor_id}`
+  : "adminPhoto";
+
+let profilePhoto = localStorage.getItem(photoKey) || "";
+
+async function loadProfile() {
+  if (userTypeValue === "doctor") {
+    await loadDoctorProfile();
+  } else {
+    loadAdminProfile();
+  }
+
+  showAvatar();
+}
+
+async function loadDoctorProfile() {
+  try {
+    const doctorId = loggedUser.doctor_id;
+
+    const res = await fetch(`${API_URL}/doctor-account/${doctorId}`);
+    const data = await res.json();
+
+    if (data.success) {
+      loggedUser = data;
+      localStorage.setItem("loggedInUser", JSON.stringify(data));
+    }
+
+  } catch (error) {
+    console.log("Using local doctor profile");
+  }
+
+  document.getElementById("profileTitle").innerText = "Doctor Profile";
+  document.getElementById("userType").value = "Doctor";
+  document.getElementById("doctorId").value = loggedUser.doctor_id || "";
+  document.getElementById("name").value = loggedUser.name || "";
+  document.getElementById("role").value = loggedUser.role || "Doctor";
+  document.getElementById("department").value = loggedUser.department || "General";
+  document.getElementById("phone").value = loggedUser.phone || "Not Available";
+  document.getElementById("email").value = loggedUser.email || "Not Available";
+  document.getElementById("hospital").value = "MediPlus AI PHC/CHC";
+
+  document.getElementById("topName").innerText = loggedUser.name || "Doctor";
+  document.getElementById("topRole").innerText = `${loggedUser.role || "Doctor"} - ${loggedUser.department || "General"}`;
+}
+
+function loadAdminProfile() {
+  document.getElementById("profileTitle").innerText = "Admin Profile";
+  document.getElementById("userType").value = "Admin";
+  document.getElementById("doctorId").value = loggedUser.username || "admin";
+  document.getElementById("name").value = loggedUser.name || "Hospital Administrator";
+  document.getElementById("role").value = loggedUser.role || "Medical Officer";
+  document.getElementById("department").value = "Administration";
+  document.getElementById("phone").value = "Not Available";
+  document.getElementById("email").value = "Not Available";
+  document.getElementById("hospital").value = loggedUser.hospital || "MediPlus AI PHC/CHC";
+
+  document.getElementById("topName").innerText = loggedUser.name || "Hospital Administrator";
+  document.getElementById("topRole").innerText = loggedUser.role || "Medical Officer";
+}
+
+function getInitials(name) {
+  if (!name) return "DR";
+  return name
+    .split(" ")
+    .map(word => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function showAvatar() {
+  const name = document.getElementById("name").value || "Doctor";
+  const initials = getInitials(name);
+
+  const avatarHTML = profilePhoto
+    ? `<img src="${profilePhoto}" class="admin-photo-img">`
+    : initials;
+
+  document.getElementById("profileAvatar").innerHTML = avatarHTML;
+  document.getElementById("topAvatar").innerHTML = avatarHTML;
+}
+
+function previewPhoto(event) {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    profilePhoto = e.target.result;
+    localStorage.setItem(photoKey, profilePhoto);
+    showAvatar();
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function removePhoto() {
+  profilePhoto = "";
+  localStorage.removeItem(photoKey);
+  showAvatar();
+}
+
+function logout() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("loggedInUser");
+  localStorage.removeItem("userType");
+  window.location.href = "login.html";
+}
+
+loadProfile();
+</script>
+
+</body>
+</html>

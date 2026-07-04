@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MediPlus AI Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="dashboard-body">
+
+  <div class="sidebar glass">
+    <h2>MediPlus AI</h2>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="doctors.html">Doctor Attendance</a>
+    <a href="doctor_profiles.html">Doctor Profiles</a>
+    <a href="beds.html">Beds</a>
+    <a href="profile.html">Admin Profile</a>
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <main class="main-content">
+
+    <div class="topbar glass">
+      <div>
+        <h1>Smart Health Admin Dashboard</h1>
+        <p>Real-time PHC/CHC monitoring with AI insights</p>
+      </div>
+
+      <select id="language" onchange="changeLanguage()">
+        <option value="en">English</option>
+        <option value="te">తెలుగు</option>
+        <option value="hi">हिन्दी</option>
+      </select>
+    </div>
+
+    <section class="cards">
+      <div class="card glass">
+        <h3 data-key="todayPatients">Today's Patients</h3>
+        <h2 id="todayPatients">--</h2>
+      </div>
+
+      <div class="card glass">
+        <h3 data-key="doctorsPresent">Doctors Present</h3>
+        <h2 id="doctorsPresent">--</h2>
+      </div>
+
+      <div class="card glass">
+        <h3 data-key="availableBeds">Available Beds</h3>
+        <h2 id="availableBeds">--</h2>
+      </div>
+
+      <div class="card glass">
+        <h3 data-key="lowStock">Low Stock Medicines</h3>
+        <h2 id="lowStock">--</h2>
+      </div>
+    </section>
+
+    <section class="ai-section glass">
+      <h2 data-key="aiTitle">AI Predictions</h2>
+
+      <div class="ai-grid">
+        <div class="ai-card-mini">
+          <p data-key="patientPredictionLabel">Tomorrow Patient Footfall</p>
+          <h1 id="patientPrediction">--</h1>
+          <button class="mini-btn" onclick="predictPatients()" data-key="predictPatientBtn">
+            Predict Patients
+          </button>
+        </div>
+
+        <div class="ai-card-mini">
+          <p data-key="medicineRiskLabel">Medicine Stock Risk</p>
+          <h1 id="medicineRisk">--</h1>
+          <button class="mini-btn" onclick="predictMedicine()" data-key="predictMedicineBtn">
+            Predict Stock
+          </button>
+          <small id="medicineMsg"></small>
+        </div>
+      </div>
+    </section>
+
+    <section class="charts">
+      <div class="chart-box glass">
+        <h3>Patient Footfall Trend</h3>
+        <canvas id="patientChart"></canvas>
+      </div>
+
+      <div class="chart-box glass">
+        <h3>Doctor Attendance</h3>
+        <canvas id="doctorChart"></canvas>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+
+      <div class="alerts glass">
+        <h2 data-key="alerts">Critical Alerts</h2>
+        <ul id="alertsList"></ul>
+      </div>
+
+      <div class="chatbot glass">
+        <div class="chatbot-header">
+          <h2 data-key="chatbot">MediPlus AI Chatbot</h2>
+
+          <select id="chatLanguage" onchange="changeChatLanguage()" class="chat-language-select">
+            <option value="en">English</option>
+            <option value="te">తెలుగు</option>
+            <option value="hi">हिन्दी</option>
+          </select>
+        </div>
+
+        <div id="chatBox" class="chat-box">
+          <div class="bot-msg">
+            Hello Admin. Ask me about beds, doctors, patients, medicines or diseases like malaria, cholera, dengue.
+          </div>
+        </div>
+
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="Ask about beds, doctors, diseases, patients or medicine stock...">
+          <button onclick="sendChat()">Send</button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

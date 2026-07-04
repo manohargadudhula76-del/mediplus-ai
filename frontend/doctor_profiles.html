@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Doctor Profiles | MediPlus AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="dashboard-body">
+
+  <div class="sidebar glass">
+    <h2>MediPlus AI</h2>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="doctors.html">Doctor Attendance</a>
+    <a href="doctor_profiles.html">Doctor Profiles</a>
+    <a href="beds.html">Beds</a>
+    <a href="profile.html">Admin Profile</a>
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <main class="main-content">
+
+    <div class="topbar glass">
+      <div>
+        <h1>Doctor Profile Management</h1>
+        <p>View doctor departments, status, attendance, and patient workload</p>
+      </div>
+
+      <input type="text" id="searchDoctor" placeholder="Search doctor..." onkeyup="searchDoctors()">
+    </div>
+
+    <section class="doctor-stats-grid">
+      <div class="doctor-stat-card glass">
+        <p>Total Doctors</p>
+        <h2 id="totalDoctors">--</h2>
+      </div>
+
+      <div class="doctor-stat-card glass present">
+        <p>Present Doctors</p>
+        <h2 id="presentDoctors">--</h2>
+      </div>
+
+      <div class="doctor-stat-card glass absent">
+        <p>Absent Doctors</p>
+        <h2 id="absentDoctors">--</h2>
+      </div>
+
+      <div class="doctor-stat-card glass">
+        <p>Attendance %</p>
+        <h2 id="attendancePercent">--</h2>
+      </div>
+    </section>
+
+    <section class="doctor-profile-grid" id="doctorProfileGrid"></section>
+
+  </main>
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+
+if (localStorage.getItem("loggedIn") !== "true") {
+  window.location.href = "login.html";
+}
+
+let allProfiles = [];
+
+async function loadDoctorProfiles() {
+  const res = await fetch(`${API_URL}/doctor-profiles`);
+  const data = await res.json();
+
+  allProfiles = data.profiles || [];
+
+  totalDoctors.innerText = data.total_doctors;
+  presentDoctors.innerText = data.present_doctors;
+  absentDoctors.innerText = data.absent_doctors;
+  attendancePercent.innerText = data.attendance_percentage + "%";
+
+  renderProfiles(allProfiles);
+}
+
+function renderProfiles(profiles) {
+  const grid = document.getElementById("doctorProfileGrid");
+  grid.innerHTML = "";
+
+  if (!profiles || profiles.length === 0) {
+    grid.innerHTML = `
+      <div class="glass empty-box">
+        <h2>No doctor records found</h2>
+        <p>Check whether doctor_attendance.csv exists inside backend/datasets folder.</p>
+      </div>
+    `;
+    return;
+  }
+
+  profiles.forEach(doc => {
+    const initials = getInitials(doc.name);
+    const statusText = String(doc.status || "").toLowerCase();
+
+    let statusClass = "profile-neutral";
+    if (statusText.includes("present") || statusText.includes("available")) statusClass = "profile-present";
+    if (statusText.includes("absent") || statusText.includes("leave")) statusClass = "profile-absent";
+
+    grid.innerHTML += `
+      <div class="doctor-profile-card glass">
+        <div class="doctor-avatar">${initials}</div>
+
+        <h2>${doc.name || "Doctor"}</h2>
+        <p class="dept-badge">${doc.department || "General"}</p>
+
+        <div class="profile-info">
+          <p><b>Doctor ID:</b> ${doc.doctor_id || "-"}</p>
+          <p><b>Status:</b> <span class="${statusClass}">${doc.status || "-"}</span></p>
+          <p><b>Check In:</b> ${doc.check_in || "-"}</p>
+          <p><b>Check Out:</b> ${doc.check_out || "-"}</p>
+          <p><b>Patients Handled:</b> ${doc.patients_handled || "0"}</p>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function getInitials(name) {
+  if (!name) return "DR";
+  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function searchDoctors() {
+  const q = document.getElementById("searchDoctor").value.toLowerCase();
+
+  const filtered = allProfiles.filter(doc =>
+    String(doc.name).toLowerCase().includes(q) ||
+    String(doc.department).toLowerCase().includes(q) ||
+    String(doc.status).toLowerCase().includes(q)
+  );
+
+  renderProfiles(filtered);
+}
+
+function logout() {
+  localStorage.removeItem("loggedIn");
+  window.location.href = "login.html";
+}
+
+loadDoctorProfiles();
+</script>
+
+</body>
+</html>

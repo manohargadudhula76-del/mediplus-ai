@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Beds | MediPlus AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="dashboard-body">
+
+  <div class="sidebar glass">
+    <h2>MediPlus AI</h2>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="doctors.html">Doctor Attendance</a>
+    <a href="doctor_profiles.html">Doctor Profiles</a>
+    <a href="beds.html">Beds</a>
+    <a href="profile.html">Admin Profile</a>
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <main class="main-content">
+    <div class="topbar glass">
+      <div>
+        <h1>Bed Availability Analytics</h1>
+        <p>Latest status based on unique Bed ID</p>
+      </div>
+    </div>
+
+    <section class="cards">
+      <div class="card glass">
+        <h3>Total Unique Beds</h3>
+        <h2 id="totalBeds">--</h2>
+      </div>
+
+      <div class="card glass">
+        <h3>Available Beds</h3>
+        <h2 id="availableBeds">--</h2>
+      </div>
+
+      <div class="card glass">
+        <h3>Occupied Beds</h3>
+        <h2 id="occupiedBeds">--</h2>
+      </div>
+
+      <div class="card glass">
+        <h3>Beds Required</h3>
+        <h2 id="bedsRequired">--</h2>
+      </div>
+    </section>
+
+    <div class="glass table-box">
+      <h2>Latest Bed Records</h2>
+      <p class="small-muted">One latest record per unique Bed ID</p>
+      <div id="bedTable"></div>
+    </div>
+  </main>
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+
+if (localStorage.getItem("loggedIn") !== "true") {
+  window.location.href = "login.html";
+}
+
+async function loadBeds() {
+  const res = await fetch(`${API_URL}/beds`);
+  const data = await res.json();
+
+  totalBeds.innerText = data.total_beds;
+  availableBeds.innerText = data.available_beds;
+  occupiedBeds.innerText = data.occupied_beds;
+  bedsRequired.innerText = data.beds_required;
+
+  createTable("bedTable", data.bed_rows);
+}
+
+function createTable(id, rows) {
+  if (!rows || rows.length === 0) {
+    document.getElementById(id).innerHTML = "<p>No records found</p>";
+    return;
+  }
+
+  let keys = Object.keys(rows[0]).slice(0, 8);
+  let html = "<table><thead><tr>";
+
+  keys.forEach(k => html += `<th>${k}</th>`);
+  html += "</tr></thead><tbody>";
+
+  rows.forEach(row => {
+    html += "<tr>";
+    keys.forEach(k => html += `<td>${row[k]}</td>`);
+    html += "</tr>";
+  });
+
+  html += "</tbody></table>";
+  document.getElementById(id).innerHTML = html;
+}
+
+function logout() {
+  localStorage.removeItem("loggedIn");
+  window.location.href = "login.html";
+}
+
+loadBeds();
+</script>
+
+</body>
+</html>

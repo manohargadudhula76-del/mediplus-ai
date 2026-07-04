@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Doctor Attendance | MediPlus AI</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="dashboard-body">
+
+  <div class="sidebar glass">
+    <h2>MediPlus AI</h2>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="doctors.html">Doctor Attendance</a>
+    <a href="doctor_profiles.html">Doctor Profiles</a>
+    <a href="beds.html">Beds</a>
+    <a href="profile.html">Admin Profile</a>
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <main class="main-content">
+
+    <div class="doctor-hero glass">
+      <div>
+        <h1>Doctor Attendance Dashboard</h1>
+        <p>Latest attendance status based on unique Doctor ID</p>
+      </div>
+
+      <div class="attendance-ring" id="attendanceRing">
+        <div class="ring-inner">
+          <h2 id="attendancePercent">--</h2>
+          <p>Attendance</p>
+        </div>
+      </div>
+    </div>
+
+    <section class="doctor-stats-grid">
+      <div class="doctor-stat-card glass">
+        <div class="stat-icon">👨‍⚕️</div>
+        <p>Total Unique Doctors</p>
+        <h2 id="totalDoctors">--</h2>
+      </div>
+
+      <div class="doctor-stat-card glass present">
+        <div class="stat-icon">✅</div>
+        <p>Present Today</p>
+        <h2 id="presentDoctors">--</h2>
+      </div>
+
+      <div class="doctor-stat-card glass absent">
+        <div class="stat-icon">❌</div>
+        <p>Absent Today</p>
+        <h2 id="absentDoctors">--</h2>
+      </div>
+
+      <div class="doctor-stat-card glass late">
+        <div class="stat-icon">⏱️</div>
+        <p>Late / Delayed</p>
+        <h2 id="lateDoctors">--</h2>
+      </div>
+    </section>
+
+    <section class="doctor-dashboard-grid">
+      <div class="glass doctor-chart-panel">
+        <h2>Attendance Overview</h2>
+        <p class="small-muted">This chart uses latest record of each unique Doctor ID</p>
+        <canvas id="attendanceChart"></canvas>
+      </div>
+
+      <div class="glass doctor-insight-panel">
+        <h2>Admin Decision Insight</h2>
+
+        <div class="insight-box">
+          <h3 id="insightTitle">Loading...</h3>
+          <p id="insightText">Reading doctor attendance data...</p>
+        </div>
+
+        <div class="attendance-summary-box">
+          <p><b>Total Unique Doctors:</b> <span id="summaryTotal">--</span></p>
+          <p><b>Present Doctors:</b> <span id="summaryPresent">--</span></p>
+          <p><b>Absent Doctors:</b> <span id="summaryAbsent">--</span></p>
+          <p><b>Attendance Percentage:</b> <span id="summaryPercent">--</span></p>
+        </div>
+      </div>
+    </section>
+
+    <div class="glass table-box">
+      <div class="table-heading">
+        <div>
+          <h2>Latest Doctor Attendance Records</h2>
+          <p>One latest record per unique Doctor ID</p>
+        </div>
+
+        <a href="doctor_profiles.html" class="mini-link-btn">View Doctor Profiles</a>
+      </div>
+
+      <div id="doctorTable"></div>
+    </div>
+
+  </main>
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+
+if (localStorage.getItem("loggedIn") !== "true") {
+  window.location.href = "login.html";
+}
+
+let attendanceChart = null;
+
+async function loadDoctors() {
+  const res = await fetch(`${API_URL}/doctors`);
+  const data = await res.json();
+
+  totalDoctors.innerText = data.total_doctors;
+  presentDoctors.innerText = data.present_doctors;
+  absentDoctors.innerText = data.absent_doctors;
+  lateDoctors.innerText = data.late_doctors || 0;
+  attendancePercent.innerText = data.attendance_percentage + "%";
+
+  summaryTotal.innerText = data.total_doctors;
+  summaryPresent.innerText = data.present_doctors;
+  summaryAbsent.innerText = data.absent_doctors;
+  summaryPercent.innerText = data.attendance_percentage + "%";
+
+  attendanceRing.style.background =
+    `conic-gradient(#0ef59b ${data.attendance_percentage}%, rgba(255,255,255,0.12) 0%)`;
+
+  if (data.attendance_percentage >= 85) {
+    insightTitle.innerText = "Good Doctor Availability";
+    insightText.innerText = "Doctor availability is strong today. OP and emergency services can run smoothly.";
+  } else if (data.attendance_percentage >= 70) {
+    insightTitle.innerText = "Moderate Doctor Shortage";
+    insightText.innerText = "Some departments may face delays. Admin should monitor OP queue and redistribute doctors.";
+  } else {
+    insightTitle.innerText = "Critical Doctor Shortage";
+    insightText.innerText = "Doctor attendance is low. Immediate intervention is recommended.";
+  }
+
+  drawChart(data.present_doctors, data.absent_doctors, data.late_doctors || 0);
+  createTable(data.doctor_rows);
+}
+
+function drawChart(present, absent, late) {
+  const ctx = document.getElementById("attendanceChart");
+
+  if (attendanceChart) attendanceChart.destroy();
+
+  attendanceChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Present", "Absent", "Late"],
+      datasets: [{
+        data: [present, absent, late],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: "#d9f7ff",
+            font: { size: 14 }
+          }
+        }
+      }
+    }
+  });
+}
+
+function createTable(rows) {
+  const box = document.getElementById("doctorTable");
+
+  if (!rows || rows.length === 0) {
+    box.innerHTML = "<p>No doctor records found.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <thead>
+        <tr>
+          <th>Doctor ID</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th>Check In</th>
+          <th>Check Out</th>
+          <th>Patients Handled</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  rows.forEach(row => {
+    let status = String(row.status || "").toLowerCase();
+    let badge = "status-neutral";
+
+    if (status.includes("present") || status.includes("available")) badge = "status-present";
+    if (status.includes("absent") || status.includes("leave")) badge = "status-absent";
+    if (status.includes("late")) badge = "status-late";
+
+    html += `
+      <tr>
+        <td>${row.doctor_id || "-"}</td>
+        <td>${row.name || "-"}</td>
+        <td>${row.department || "-"}</td>
+        <td><span class="status-pill ${badge}">${row.status || "-"}</span></td>
+        <td>${row.check_in || "-"}</td>
+        <td>${row.check_out || "-"}</td>
+        <td>${row.patients_handled || "0"}</td>
+      </tr>
+    `;
+  });
+
+  html += "</tbody></table>";
+  box.innerHTML = html;
+}
+
+function logout() {
+  localStorage.removeItem("loggedIn");
+  window.location.href = "login.html";
+}
+
+loadDoctors();
+</script>
+
+</body>
+</html>

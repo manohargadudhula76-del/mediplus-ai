@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MediPlus AI Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="login-body">
+
+  <div class="login-container">
+    <div class="logo-circle">+</div>
+
+    <h1>MediPlus AI</h1>
+    <p>AI-Driven PHC/CHC Decision Support Dashboard</p>
+
+    <div class="login-card glass">
+      <h2>Hospital Login</h2>
+
+      <input type="text" id="username" placeholder="Admin Username / Doctor ID">
+      <input type="password" id="password" placeholder="Password">
+
+      <button onclick="login()">Login</button>
+
+      <p class="demo-text">
+        Admin Demo: admin / mediplus123<br>
+        Doctors: Use Doctor_ID and Password from CSV
+      </p>
+
+      <p id="loginMsg"></p>
+    </div>
+  </div>
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+
+async function login() {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  const msg = document.getElementById("loginMsg");
+
+  if (!username || !password) {
+    msg.innerText = "Please enter ID and password.";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({username, password})
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem("loggedIn", "true");
+      localStorage.setItem("loggedInUser", JSON.stringify(data.user));
+      localStorage.setItem("userType", data.user_type);
+
+      window.location.href = "dashboard.html";
+    } else {
+      msg.innerText = data.message;
+    }
+
+  } catch (error) {
+    msg.innerText = "Backend not running. Start FastAPI server.";
+  }
+}
+</script>
+
+</body>
+</html>
