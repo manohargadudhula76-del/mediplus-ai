@@ -1,7 +1,7 @@
-const API_URL = "https://YOUR-BACKEND-URL.onrender.com";
+const API_URL = "https://mediplus-ai.onrender.com";
 
 if (localStorage.getItem("loggedIn") !== "true") {
-  if (!window.location.href.includes("login.html")) {
+  if (!window.location.href.includes("login.html") && !window.location.href.includes("index.html")) {
     window.location.href = "login.html";
   }
 }
@@ -63,49 +63,79 @@ const translations = {
 };
 
 async function loadDashboard() {
-  const res = await fetch(`${API_URL}/dashboard-summary`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`${API_URL}/dashboard-summary`);
 
-  document.getElementById("todayPatients").innerText = data.patients.today_patients;
-  document.getElementById("doctorsPresent").innerText = `${data.doctors.present_doctors}/${data.doctors.total_doctors}`;
-  document.getElementById("availableBeds").innerText = data.beds.available_beds;
-  document.getElementById("lowStock").innerText = data.medicines.low_stock_medicines;
+    if (!res.ok) {
+      throw new Error("Backend API failed");
+    }
 
-  document.getElementById("patientPrediction").innerText = "--";
-  document.getElementById("medicineRisk").innerText = "--";
+    const data = await res.json();
 
-  const alertsList = document.getElementById("alertsList");
-  alertsList.innerHTML = "";
+    document.getElementById("todayPatients").innerText = data.patients.today_patients;
+    document.getElementById("doctorsPresent").innerText = `${data.doctors.present_doctors}/${data.doctors.total_doctors}`;
+    document.getElementById("availableBeds").innerText = data.beds.available_beds;
+    document.getElementById("lowStock").innerText = data.medicines.low_stock_medicines;
 
-  data.alerts.forEach(alert => {
-    const li = document.createElement("li");
-    li.innerText = "⚠ " + alert;
-    alertsList.appendChild(li);
-  });
+    document.getElementById("patientPrediction").innerText = "--";
+    document.getElementById("medicineRisk").innerText = "--";
 
-  drawPatientChart(data.patients.patient_trend);
-  drawDoctorChart(data.doctors.present_doctors, data.doctors.absent_doctors);
+    const alertsList = document.getElementById("alertsList");
+    alertsList.innerHTML = "";
+
+    data.alerts.forEach(alert => {
+      const li = document.createElement("li");
+      li.innerText = "⚠ " + alert;
+      alertsList.appendChild(li);
+    });
+
+    drawPatientChart(data.patients.patient_trend || []);
+    drawDoctorChart(data.doctors.present_doctors, data.doctors.absent_doctors);
+
+  } catch (error) {
+    console.error("Dashboard load error:", error);
+
+    document.getElementById("todayPatients").innerText = "Error";
+    document.getElementById("doctorsPresent").innerText = "Error";
+    document.getElementById("availableBeds").innerText = "Error";
+    document.getElementById("lowStock").innerText = "Error";
+
+    const alertsList = document.getElementById("alertsList");
+    if (alertsList) {
+      alertsList.innerHTML = "<li>⚠ Backend connection failed. Please wait because Render free server may be waking up.</li>";
+    }
+  }
 }
 
 async function predictPatients() {
-  document.getElementById("patientPrediction").innerText = "Loading...";
+  try {
+    document.getElementById("patientPrediction").innerText = "Loading...";
 
-  const res = await fetch(`${API_URL}/predict-patient-footfall`);
-  const data = await res.json();
+    const res = await fetch(`${API_URL}/predict-patient-footfall`);
+    const data = await res.json();
 
-  document.getElementById("patientPrediction").innerText = data.prediction;
+    document.getElementById("patientPrediction").innerText = data.prediction;
+  } catch (error) {
+    console.error("Patient prediction error:", error);
+    document.getElementById("patientPrediction").innerText = "Error";
+  }
 }
 
 async function predictMedicine() {
-  document.getElementById("medicineRisk").innerText = "Loading...";
+  try {
+    document.getElementById("medicineRisk").innerText = "Loading...";
 
-  const res = await fetch(`${API_URL}/predict-medicine-stock`);
-  const data = await res.json();
+    const res = await fetch(`${API_URL}/predict-medicine-stock`);
+    const data = await res.json();
 
-  document.getElementById("medicineRisk").innerText = data.risk;
+    document.getElementById("medicineRisk").innerText = data.risk;
 
-  const msgBox = document.getElementById("medicineMsg");
-  if (msgBox) msgBox.innerText = data.message;
+    const msgBox = document.getElementById("medicineMsg");
+    if (msgBox) msgBox.innerText = data.message;
+  } catch (error) {
+    console.error("Medicine prediction error:", error);
+    document.getElementById("medicineRisk").innerText = "Error";
+  }
 }
 
 function drawPatientChart(trend) {
@@ -174,18 +204,23 @@ async function sendChat() {
   typing.innerText = "MediPlus AI is typing...";
   chatBox.appendChild(typing);
 
-  const res = await fetch(`${API_URL}/chatbot`, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      message: msg,
-      language: chatLanguage
-    })
-  });
+  try {
+    const res = await fetch(`${API_URL}/chatbot`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        message: msg,
+        language: chatLanguage
+      })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
+    typing.innerText = data.reply;
+  } catch (error) {
+    console.error("Chatbot error:", error);
+    typing.innerText = "Backend connection failed. Please try again after a few seconds.";
+  }
 
-  typing.innerText = data.reply;
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
@@ -211,6 +246,8 @@ function changeChatLanguage() {
 
 function logout() {
   localStorage.removeItem("loggedIn");
+  localStorage.removeItem("loggedInUser");
+  localStorage.removeItem("userType");
   window.location.href = "login.html";
 }
 
