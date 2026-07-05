@@ -7,6 +7,24 @@
 </head>
 
 <body class="dashboard-body">
+<input type="checkbox" id="phoneMenuToggle" class="phone-menu-checkbox">
+
+<label for="phoneMenuToggle" class="phone-hamburger">
+  ?
+</label>
+
+<label for="phoneMenuToggle" class="phone-menu-backdrop"></label>
+
+<div class="phone-menu">
+  <h2>MediPlus AI</h2>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="doctors.html">Doctor Attendance</a>
+  <a href="doctor_profiles.html">Doctor Profiles</a>
+  <a href="beds.html">Beds</a>
+  <a href="medicines.html">Medicines</a>
+  <a href="profile.html">Profile</a>
+  <a href="login.html" onclick="localStorage.clear()">Logout</a>
+</div>
 <div class="phone-nav">
   <a href="dashboard.html">Dashboard</a>
   <a href="doctors.html">Doctors</a>
@@ -240,5 +258,6 @@ loadDoctors();
   <script src="mobile-nav.js"></script>
 </body>
 </html>
+
 
 
